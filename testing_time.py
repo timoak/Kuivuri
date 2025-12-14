@@ -10,9 +10,14 @@ import librtd
 from google.oauth2 import service_account
 from google.auth import jwt
 import requests
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
  
 PUBSUB_TOPIC = "koti_lampotila"
 PROJECT_ID = "project-4831b4ac-2e18-452a-99a"
+LOGGING_INTERVAL = 1000  # 1000 == 1 second
+
+# source .venv/bin/activate
 
 def append_datetime_to_csv(path: str = 'date_testing.csv') -> None:
     """Append the current date and time to a CSV file.
@@ -88,13 +93,34 @@ def publish_to_pubsub(current_time: str, sensor_1_value: float, topic_path: str 
         print("timeout")  # Block until the message is published
     return ""
 
+def draw_sensor_graph(sensor_values):
+    """Draw a line graph of sensor values with x-axis as time and y-axis as sensor value (float)."""
+    global canvas
+    if canvas:
+        canvas.get_tk_widget().destroy()
+    fig = plt.Figure(figsize=(5,4), dpi=100)
+    ax = fig.add_subplot(111)
+    times = [datetime.datetime.strptime(t, '%Y-%m-%d %H:%M:%S') for t, v in sensor_values]
+    values = [v for t, v in sensor_values]
+    ax.plot(times, values)
+    ax.set_xlabel('Time')
+    ax.set_ylabel('Sensor Value (float)')
+    ax.set_title('Sensor Values over Time')
+    canvas = FigureCanvasTkAgg(fig, master=root)
+    canvas.draw()
+    canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+
 def update_time():
     current_time = time.strftime('%Y-%m-%d %H:%M:%S')
     label.config(text=current_time)
     sensor_1_value = round(librtd.get(0,1),1)
     sensor1_label.config(text=f"Sensor 1: {sensor_1_value} C")
+    sensor_values.append((current_time, sensor_1_value))
 
+
+    print(sensor_values)
     append_to_csv(current_time, 1, sensor_1_value)
+    draw_sensor_graph(sensor_values)
 
     # Optionally publish to Google Pub/Sub. Enable by setting `ENABLE_PUBSUB=1` in environment.
     # Configure publish constant with `PUBSUB_CONSTANT` env var (defaults to 1.0).
@@ -109,16 +135,18 @@ def update_time():
             # Fail silently to avoid crashing the GUI loop; in a real app you may want to log this.
             pass
     publish_to_pubsub(current_time, sensor_1_value)
-    root.after(60000, update_time)
+    root.after(LOGGING_INTERVAL, update_time)
 
 def main():
     """Create and run the Tkinter GUI that shows current date and time.
 
     Keeps `root` and `label` as module globals so `update_time` can access them.
     """
-    global root, label, sensor1_label
+    global root, label, sensor1_label, sensor_values, canvas
     root = tk.Tk()
     root.title("Current Date and Time")
+    sensor_values = []
+    canvas = None
 
     label = tk.Label(root, font=('Arial', 40), fg='black')
     label.pack(padx=20, pady=20)
