@@ -13,7 +13,8 @@ import requests
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
  
-PUBSUB_TOPIC = "koti_lampotila"
+# PUBSUB_TOPIC = "koti_lampotila"
+PUBSUB_TOPIC = "kuivuri_panelia"
 PROJECT_ID = "project-4831b4ac-2e18-452a-99a"
 LOGGING_INTERVAL = 1000  # 1000 == 1 second
 
