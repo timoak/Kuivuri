@@ -16,7 +16,9 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 # PUBSUB_TOPIC = "koti_lampotila"
 PUBSUB_TOPIC = "kuivuri_panelia"
 PROJECT_ID = "project-4831b4ac-2e18-452a-99a"
-LOGGING_INTERVAL = 60000  # 1000 == 1 second
+LOGGING_INTERVAL = 1000  # 1000 == 1 second
+SISAANTULO_LAMPOTILA_THRESHOLD = 30
+VILJAN_LAMPOTILA_THRESHOLD = 25
 
 canvases = {}
 
@@ -207,17 +209,20 @@ def publish_to_pubsub_array(current_time: str, values: list)-> str:
     message = {"current_time": current_time, "sensor_1": values[0], "sensor_2": values[1],"sensor_3": values[2],"sensor_4": values[3]}
     data = json.dumps(message).encode('utf-8')
     print("Measurements: ", data)
-    
-    
-    future = publisher.publish(topic_path, data, sensor_1=str(values[0]), sensor_2=str(values[1]), sensor_3=str(values[2]), sensor_4=str(values[3]))
-    
-    try:
-        future.result(timeout=1)
-    except Exception as e:
-        print("timeout")  # Block until the message is published
-    return ""
 
-
+    if (values[0] > SISAANTULO_LAMPOTILA_THRESHOLD or values[3] > VILJAN_LAMPOTILA_THRESHOLD) :
+    
+        future = publisher.publish(topic_path, data, sensor_1=str(values[0]), sensor_2=str(values[1]), sensor_3=str(values[2]), sensor_4=str(values[3]))
+        
+        try:
+            future.result(timeout=1)
+        except Exception as e:
+            print("timeout")  # Block until the message is published
+        return ""
+    else:
+        print("Vilja ei ylitä kynnysarvoa " + str(VILJAN_LAMPOTILA_THRESHOLD) + " tai sisääntuloa " + str(SISAANTULO_LAMPOTILA_THRESHOLD) + " lämpötila ei ylitä kynnysarvoa. Ei julkaista Pub/Subiin.")
+        return "Value exceeds threshold"
+    
 def draw_sensor_graph(sensor_values, position_x, position_y, title="Sensor Values Over Time", clear_canvas=False):
     """Draw a line graph of sensor values with x-axis as minutes since first measurement and y-axis as sensor value (float)."""
     key = (position_x, position_y)
