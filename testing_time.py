@@ -250,8 +250,9 @@ def update_time():
     for i in range(number_of_sensors):
          sensor_value = round(librtd.get(0, i+1), 1)
          # If the first sensor (index 0) exceeds 23 degrees, initiate shutdown sequence with confirmation and delay. This is a safety measure to prevent overheating.
-         if i == 0 and sensor_value > 23:
-            shutdown_raspberry_pi(confirm=True, delay_seconds=4, reboot=False, dry_run=False)
+       # Shutdown is commented out for safety during testing; uncomment to enable.
+       #  if i == 0 and sensor_value > 23:
+        #    shutdown_raspberry_pi(confirm=True, delay_seconds=4, reboot=False, dry_run=False)
          sensor_labels[i+1].config(text=f"{sensor_titles[i]} {i+1}: {sensor_value} °C")
          sensor_values.append((current_time, sensor_value))
          append_to_csv(current_time, i+1, sensor_value)
